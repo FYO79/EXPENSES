@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Year">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141716" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="manifest" href="manifest.webmanifest">
+<title>My Year</title>
+<style>
+:root{
+  --bg:#f6f4ef; --surface:#ffffff; --surface-2:#faf8f3; --ink:#1d2321; --muted:#6b716e; --line:#e4e0d6;
+  --accent:#1f6f5c; --accent-ink:#ffffff; --accent-soft:#e3f0eb;
+  --warn:#b4412f; --warn-soft:#f8e5e0; --good:#1f6f5c;
+  --field:#fffbe8; --field-line:#e8d68c; --field-focus:#1f6f5c;
+  --shadow:0 1px 2px rgba(30,30,20,.05),0 4px 16px rgba(30,30,20,.05);
+  --r:14px; --serif:ui-serif,"New York",Georgia,serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141716; --surface:#1c201f; --surface-2:#191d1c; --ink:#ecebe6; --muted:#9aa19d; --line:#2c3230;
+    --accent:#5cc2a3; --accent-ink:#0d1a16; --accent-soft:#1d332c;
+    --warn:#f08a74; --warn-soft:#3a221d; --good:#5cc2a3;
+    --field:#262418; --field-line:#4f4826; --field-focus:#5cc2a3;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141716; --surface:#1c201f; --surface-2:#191d1c; --ink:#ecebe6; --muted:#9aa19d; --line:#2c3230;
+  --accent:#5cc2a3; --accent-ink:#0d1a16; --accent-soft:#1d332c;
+  --warn:#f08a74; --warn-soft:#3a221d; --good:#5cc2a3;
+  --field:#262418; --field-line:#4f4826; --field-focus:#5cc2a3;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
+.num,td.n,th.n{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+
+/* header */
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top)}
+.toprow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px}
+.brand{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-.01em;margin-right:auto;display:flex;align-items:baseline;gap:10px}
+.yearpick{display:flex;align-items:center;gap:2px;font-size:14px;color:var(--muted)}
+.yearpick button{border:0;background:none;padding:4px 8px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:16px}
+.yearpick button:hover{background:var(--line)}
+.yearpick b{color:var(--ink);font-weight:600}
+.tabs{display:flex;background:var(--line);border-radius:11px;padding:3px;gap:2px}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:500;color:var(--muted);min-height:36px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.syncpill{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);border:0;background:none;cursor:default;padding:6px 8px;border-radius:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--good)} .dot.busy{background:#d6a12b} .dot.err{background:var(--warn)}
+
+main{padding:18px 0 60px}
+h2{font-family:var(--serif);font-weight:600;font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:16px}
+.cols-2{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
+@media (max-width:900px){.cols-2{grid-template-columns:minmax(0,1fr)}}
+
+/* month strip */
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:0 -2px 6px;scrollbar-width:thin}
+.chip{flex:1 0 58px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 6px;text-align:center;cursor:pointer;min-height:42px}
+.chip .m{font-weight:600;font-size:14px}
+.chip .s{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip[aria-current="true"] .s{color:inherit;opacity:.8}
+.chip.today:not([aria-current="true"]){border-color:var(--accent)}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.stats.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:980px){.stats.five{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.stats,.stats.five{grid-template-columns:repeat(2,minmax(0,1fr))}}
+input.negv,input.negv::placeholder{color:var(--warn)}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);min-width:0}
+.stat .l{font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.stat .v{font-size:24px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v.neg{color:var(--warn)} .stat .v.pos{color:var(--good)}
+.stat input{width:100%;margin-top:4px;font-size:20px;font-weight:600}
+.stat .sub{font-size:11.5px;color:var(--muted);margin-top:3px;min-height:16px}
+
+/* fields */
+input[type=text],input[type=number],input[type=date],input[type=password],select,textarea{
+  background:var(--field);border:1px solid var(--field-line);border-radius:9px;padding:8px 10px;min-height:40px;width:100%;min-width:0}
+input::placeholder{color:var(--muted);opacity:.85}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--field-focus);outline-offset:0;border-color:transparent}
+input.inherited::placeholder{font-style:italic}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);min-width:0}
+.form{display:grid;grid-template-columns:130px minmax(0,1fr) minmax(0,1fr) 110px;gap:8px;align-items:end}
+.form.kids{grid-template-columns:130px minmax(0,1fr) minmax(0,1fr) 110px}
+.form .full{grid-column:1/-1}
+@media (max-width:600px){.form,.form.kids{grid-template-columns:1fr 1fr}.form .wide{grid-column:1/-1}}
+.repeat{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px}
+.repeat select{width:auto;min-height:34px;padding:4px 8px}
+.check{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500;min-height:40px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--warn)}
+.btn.small{min-height:32px;padding:4px 10px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl th.n,.tbl td.n{text-align:right;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.total td{font-weight:600;border-top:1.5px solid var(--ink);border-bottom:0}
+.tbl tr.sub td{font-weight:600;background:var(--surface-2)}
+.tbl tr.over td{background:var(--warn-soft)}
+.tbl tr.over td.left{color:var(--warn);font-weight:600}
+.tbl td input{min-height:34px;padding:5px 8px;text-align:right;width:100px}
+.tbl .muted{color:var(--muted)}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.bar.over i{background:var(--warn)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll .tbl th:first-child,.scroll .tbl td:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
+.scroll .tbl tr.sub td:first-child{background:var(--surface-2)}
+.zero{color:var(--muted);opacity:.5}
+
+/* entries list */
+.list{display:flex;flex-direction:column}
+.entry{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px}
+.entry:hover{background:var(--surface-2)}
+.entry:last-child{border-bottom:0}
+.entry .d{font-size:12px;color:var(--muted);text-align:center;line-height:1.15}
+.entry .d b{display:block;font-size:18px;color:var(--ink);font-weight:600}
+.entry .t{min-width:0}
+.entry .t .w{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.entry .t .c{font-size:12.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.entry .a{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:28px 10px;font-size:14px}
+
+/* year chart */
+.chart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end;height:150px;padding-top:8px}
+.chart .col{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;min-width:0}
+.chart .bars{display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center}
+.chart .bars i{width:42%;max-width:16px;border-radius:3px 3px 0 0;min-height:1px}
+.chart .inc{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+.chart .exp{background:var(--accent)}
+.chart .exp.over{background:var(--warn)}
+.chart .lab{font-size:11px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* where the money went */
+.where{display:flex;flex-direction:column;gap:10px}
+.wrow{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}
+.wrow .wn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrow .wt{height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.wrow .wt i{display:block;height:100%;background:var(--accent);border-radius:7px;min-width:4px}
+.wrow .wv{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;min-width:120px}
+.wrow .wv b{font-weight:600}
+.wrow .wv span{color:var(--muted);display:inline-block;min-width:44px}
+.wsum{font-size:14px;margin:0 0 12px;color:var(--muted)}
+.wsum b{color:var(--ink)}
+@media (max-width:600px){.wrow{grid-template-columns:minmax(0,1fr) auto}.wrow .wt{grid-column:1/-1;grid-row:2;height:10px}.wrow .wv{min-width:0}}
+[hidden]{display:none!important}
+/* aligned two-column forms */
+.form2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.form2 .full{grid-column:1/-1}
+.form2 input,.form2 select{min-height:44px}
+.form2 .foot{grid-column:1/-1;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px;font-size:14px}
+.form2 .foot select{width:auto;min-height:36px;padding:4px 8px}
+.form2 .foot .btn{margin-left:auto;min-width:120px;min-height:44px}
+.kidrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 12px;background:var(--accent-soft);border-radius:12px;padding:10px 12px}
+.kidrow .hint{margin:0}
+.kv{display:grid;grid-template-columns:auto auto;gap:6px 18px;font-size:14px;justify-content:start}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* settings */
+.set h2{margin-bottom:2px}
+.set section{margin-bottom:16px}
+.editlist{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.editlist .row input{flex:1}
+.kidbox{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--surface-2)}
+.kidbox textarea{min-height:70px;margin-top:6px;font-size:14px}
+ol.steps{margin:8px 0 12px;padding-left:20px;font-size:14px}
+ol.steps li{margin:3px 0}
+code{background:var(--line);padding:1px 5px;border-radius:5px;font-size:13px}
+
+/* dialog */
+dialog{border:0;border-radius:18px;padding:0;background:var(--surface);color:var(--ink);width:min(460px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(10,15,12,.35)}
+dialog form{padding:18px;display:flex;flex-direction:column;gap:10px}
+dialog .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scope{background:var(--accent-soft);border-radius:10px;padding:10px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:600px){
+  .brand{font-size:19px}
+  .tabs{width:100%} .tabs button{flex:1;padding:7px 6px}
+  .stat .v{font-size:20px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap toprow">
+    <div class="brand">My Year
+      <span class="yearpick"><button id="yPrev" aria-label="Previous school year">‹</button><b id="yLabel"></b><button id="yNext" aria-label="Next school year">›</button></span>
+    </div>
+    <span class="syncpill" title="Your data is saved in this browser on this Mac"><span class="dot ok"></span>Saved on this Mac</span>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="month">Month</button>
+      <button role="tab" data-tab="year">Year</button>
+      <button role="tab" data-tab="kids">Kids</button>
+      <button role="tab" data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="fileIn" accept=".json,application/json" class="sr">
+
+<script>
+"use strict";
+/* ============ basics ============ */
+const LS_DATA='myyear.data.v1', LS_UI='myyear.ui.v1';
+const GIST_FILE='my-year-expenses.json';
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const now=()=>Date.now();
+const uid=()=>Math.random().toString(36).slice(2,9)+now().toString(36).slice(-5);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function yearKeys(Y){const a=[];for(let i=0;i<12;i++){const m=(8+i)%12,y=Y+(8+i>=12?1:0);a.push(y+'-'+pad(m+1))}return a}
+function prevKey(k){let[y,m]=k.split('-').map(Number);m--;if(!m){m=12;y--}return y+'-'+pad(m)}
+function nextKey(k){let[y,m]=k.split('-').map(Number);m++;if(m>12){m=1;y++}return y+'-'+pad(m)}
+function mLabel(k,long){const[y,m]=k.split('-').map(Number);return long?MONL[m-1]+' '+y:MON[m-1]}
+function daysIn(k){const[y,m]=k.split('-').map(Number);return new Date(y,m,0).getDate()}
+function dateIn(k,day){return k+'-'+pad(Math.min(day,daysIn(k)))}
+function schoolYearOf(k){const[y,m]=k.split('-').map(Number);return m>=9?y:y-1}
+function fmtDate(d){const[y,m,dd]=d.split('-').map(Number);return dd+' '+MON[m-1]}
+
+/* ============ data ============ */
+const DEFAULT_CATS=['Rent & housing','Living expenses','Delivery food','Groceries','School fees','Private lessons','Fuel','Bills (phone, internet, subscriptions)','Health & medical','Government (residency & fees)','Zakat & charity','Others (Car installment)','Nahed','Loan','Shopping','Eating out & fun','Savings'];
+const KID_CATS=['School fees','Private lessons']; /* expenses in these categories are kids' payments */
+const OLD_CAT_LISTS=[
+  ['Rent & housing','Food & groceries','School fees','Private lessons','Fuel & bills','Others (Car installment)','Nahed','Loan','Shopping','Eating out & fun','Savings'],
+  ['Rent & housing','Living expenses','Delivery food','Groceries','School fees','Private lessons','Fuel','Bills','Others (Car installment)','Nahed','Loan','Shopping','Eating out & fun','Savings']];
+/* each kid: private lessons (no subject needed) + school costs */
+const DEFAULT_KIDS=[
+  {name:'Omar',subjects:['School fees','Private lessons','Books']},
+  {name:'Layan',subjects:['School fees','Private lessons','Books']},
+  {name:'Malek',subjects:['School fees','Private lessons','Books']}];
+const PREV_KIDS=[
+  {name:'Omar',subjects:['Private lessons','School fees','Books','School bus']},
+  {name:'Layan',subjects:['Private lessons','School fees','Books']},
+  {name:'Malek',subjects:['Private lessons','School fees','Books']}];
+const OLD_KIDS=[
+  {name:'Omar',subjects:['English','Biology','Chemistry','Physics','Math','German','Arabic','School fees','Books','School bus']},
+  {name:'Layan',subjects:['English','Science','Math 1','Math 2','Arabic','School fees','Books']},
+  {name:'Malek',subjects:['English 1','English 2','Science','Math 1','Arabic 1','Arabic 2','Arabic 3','School fees','Books']}];
+function defaultData(){
+  return {v:1,
+    config:{u:0,currency:'KD',decimals:3,categories:DEFAULT_CATS.slice(),kids:JSON.parse(JSON.stringify(DEFAULT_KIDS))},
+    months:{},
+    expenses:[], edu:[]};
+}
+let D=ls.get(LS_DATA)||defaultData();
+/* devices that opened the first version: switch untouched old category list to the new one */
+if(!D.config.u&&OLD_CAT_LISTS.some(l=>JSON.stringify(l)===JSON.stringify(D.config.categories))){
+  D.config.categories=DEFAULT_CATS.slice();
+  D.expenses.forEach(e=>{if(e.cat==='Bills'){e.cat=DEFAULT_CATS[7];e.u=now()}});
+}
+if(!D.config.u&&[OLD_KIDS,PREV_KIDS].some(l=>JSON.stringify(D.config.kids)===JSON.stringify(l)))D.config.kids=JSON.parse(JSON.stringify(DEFAULT_KIDS));
+let UI=Object.assign({tab:'month',year:schoolYearOf(todayStr().slice(0,7)),month:todayStr().slice(0,7),kidFilter:'all'},ls.get(LS_UI)||{});
+if(!UI.month||schoolYearOf(UI.month)!==UI.year) UI.month=yearKeys(UI.year)[0];
+
+const cfg=()=>D.config;
+const live=a=>a.filter(x=>!x.del);
+const money=(n,opt={})=>{const c=cfg();const v=Number(n)||0;
+  const s=v.toLocaleString('en-US',{minimumFractionDigits:opt.min??0,maximumFractionDigits:c.decimals});
+  return opt.bare?s:(c.currency?c.currency+' ':'')+s};
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(/,/g,''));return isFinite(n)?n:null};
+
+function mfield(k,f){const m=D.months[k];return m&&m[f]?m[f].v:undefined}
+function setMField(k,f,v){const m=D.months[k]||(D.months[k]={});m[f]={v,u:now()};}
+/* salary and budgets belong to their own month only (entered every month) */
+function carried(k,f){const v=mfield(k,f);return(v!==undefined&&v!==null)?{v:+v,from:k,own:true}:{v:0,from:null,own:false}}
+const salaryOf=k=>carried(k,'salary');
+const budgetOf=(k,c)=>carried(k,'b:'+c);
+const otherOf=k=>{const v=mfield(k,'other');return v==null?0:+v};
+/* money left at the end of last month comes in as income this month (automatic; can be changed) */
+function hasActivity(k){const m=D.months[k]||{};return ['salary','other','carry'].some(f=>m[f]&&m[f].v!=null)||live(D.expenses).some(e=>e.date.startsWith(k))}
+function carryOf(k,depth=0){
+  const own=mfield(k,'carry'); if(own!=null)return{v:+own,own:true,from:prevKey(k)};
+  const p=prevKey(k); if(depth>24||!hasActivity(p))return{v:0,own:false,from:null};
+  return{v:leftOf(p,depth+1),own:false,from:p};
+}
+function leftOf(k,depth=0){return salaryOf(k).v+otherOf(k)+carryOf(k,depth).v-spentIn(k)}
+
+function expIn(k){return live(D.expenses).filter(e=>e.date.slice(0,7)===k).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0)}
+function eduIn(k){return live(D.edu).filter(e=>e.date.slice(0,7)===k)}
+function spentIn(k){return expIn(k).reduce((s,e)=>s+e.amount,0)}
+
+let saveTimer=null;
+function commit(msg){
+  D.localU=now();
+  ls.set(LS_DATA,D);
+  scheduleRender();
+  if(msg)toast(msg);
+}
+function saveUI(){ls.set(LS_UI,UI)}
+
+/* ============ merge (for importing a backup) ============ */
+function mergeData(a,b){
+  const out={v:1};
+  out.config=((b.config?.u||0)>(a.config?.u||0))?b.config:a.config;
+  out.months={};
+  const keys=new Set([...Object.keys(a.months||{}),...Object.keys(b.months||{})]);
+  [...keys].sort().forEach(k=>{
+    const ma=(a.months||{})[k]||{},mb=(b.months||{})[k]||{},m={};
+    new Set([...Object.keys(ma),...Object.keys(mb)]).forEach(f=>{
+      const x=ma[f],y=mb[f]; m[f]=(!x||(y&&(y.u||0)>(x.u||0)))?y:x;});
+    out.months[k]=Object.fromEntries(Object.entries(m).sort());
+  });
+  const mergeArr=(x=[],y=[])=>{const map=new Map();[...x,...y].forEach(r=>{const o=map.get(r.id);if(!o||(r.u||0)>(o.u||0))map.set(r.id,r)});
+    return [...map.values()].sort((p,q)=>p.date<q.date?-1:p.date>q.date?1:(p.id<q.id?-1:1))};
+  out.expenses=mergeArr(a.expenses,b.expenses);
+  out.edu=mergeArr(a.edu,b.edu);
+  return out;
+}
+const canon=x=>JSON.stringify(mergeData(x,{config:{u:-1},months:{},expenses:[],edu:[]}));
+
+/* ============ render ============ */
+let renderQueued=false;
+function scheduleRender(){if(renderQueued)return;renderQueued=true;setTimeout(()=>{renderQueued=false;render()},0)}
+function render(){
+  const ae=document.activeElement, focusId=ae&&ae.id, sel=(ae&&'selectionStart' in ae)?[ae.selectionStart,ae.selectionEnd]:null;
+  const sy=window.scrollY;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===UI.tab));
+  $('#yLabel').textContent=UI.year+'–'+String(UI.year+1).slice(2);
+  const v={month:viewMonth,year:viewYear,kids:viewKids,settings:viewSettings}[UI.tab]();
+  $('#app').innerHTML=v;
+  afterRender();
+  window.scrollTo(0,sy);
+  if(focusId){const el=document.getElementById(focusId);if(el&&el!==document.activeElement){el.focus({preventScroll:true});try{if(sel&&el.type!=='number'&&el.type!=='date')el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+function afterRender(){
+  if($('#kidRow'))refreshMonthKid(); else {const ks=$('#fKid'); if(ks) fillSubjects(ks.value,'#fSub');}
+  const cur=document.querySelector('.chip[aria-current="true"]'); if(cur&&!cur.dataset.seen){cur.scrollIntoView({block:'nearest',inline:'center'});}
+}
+
+function monthStrip(sumFn){
+  const t=todayStr().slice(0,7);
+  return `<div class="strip" role="tablist" aria-label="Months">${yearKeys(UI.year).map(k=>{
+    return `<button class="chip${k===t?' today':''}" data-act="pickMonth" data-k="${k}" aria-current="${k===UI.month}">
+      <div class="m">${mLabel(k)}</div></button>`}).join('')}</div>`;
+}
+function catOptions(sel){return cfg().categories.map(c=>`<option${c===sel?' selected':''}>${esc(c)}</option>`).join('')}
+function untilOptions(fromK,sel){
+  const ks=yearKeys(schoolYearOf(fromK)).filter(k=>k>fromK);
+  if(!ks.length)return '<option value="">(last month of the year)</option>';
+  sel=sel||ks[ks.length-1];
+  return ks.map(k=>`<option value="${k}"${k===sel?' selected':''}>${mLabel(k,true)}</option>`).join('');
+}
+function defaultDate(k){const t=todayStr();return t.slice(0,7)===k?t:k+'-01'}
+
+/* ----- Month ----- */
+function viewMonth(){
+  const k=UI.month, sal=salaryOf(k), other=otherOf(k), carry=carryOf(k), inc=sal.v+other+carry.v;
+  const exps=expIn(k), spent=exps.reduce((s,e)=>s+e.amount,0), left=inc-spent;
+  const pk=prevKey(k);
+  const kidCat=KID_CATS.includes(UI.lastCat)?UI.lastCat:null;
+  return `
+  ${monthStrip(spentIn)}
+  <div class="row" style="margin-bottom:12px"><h2>${mLabel(k,true)}</h2></div>
+  <div class="stats five">
+    <div class="stat"><div class="l"><label for="salary">Salary</label></div>
+      <input id="salary" type="number" inputmode="decimal" step="any" data-act="salary" value="${sal.own?sal.v:''}" placeholder="0">
+      <div class="sub">This month only</div></div>
+    <div class="stat"><div class="l"><label for="other">Other income</label></div>
+      <input id="other" type="number" inputmode="decimal" step="any" data-act="other" value="${mfield(k,'other')??''}" placeholder="0">
+      <div class="sub">This month only</div></div>
+    <div class="stat"><div class="l"><label for="carry">From last month</label></div>
+      <input id="carry" type="number" inputmode="decimal" step="any" data-act="carry" value="${carry.own?carry.v:''}" placeholder="${money(carry.v,{bare:true})}" class="${carry.own?'':'inherited'}${carry.v<0?' negv':''}">
+      <div class="sub">${carry.own?'Changed by you · clear it to use the automatic amount':(carry.from?'Left over from '+mLabel(pk,true):'Nothing left from '+mLabel(pk,true))}</div></div>
+    <div class="stat"><div class="l">Spent</div><div class="v num">${money(spent)}</div><div class="sub">${exps.length} expense${exps.length===1?'':'s'}</div></div>
+    <div class="stat"><div class="l">Left</div><div class="v num ${left<0?'neg':'pos'}">${money(left)}</div><div class="sub">Goes to next month</div></div>
+  </div>
+  <div class="grid cols-2">
+    <div class="card" style="align-self:start">
+      <h3>Add an expense</h3>
+      <form id="expForm" class="form2" autocomplete="off">
+        <label class="f">Date<input type="date" id="fDate" value="${defaultDate(k)}" required></label>
+        <label class="f">Amount<input type="number" id="fAmt" inputmode="decimal" step="any" min="0" required placeholder="0"></label>
+        <label class="f full">Category<select id="fCat">${catOptions(UI.lastCat)}</select></label>
+        <div class="full kidrow" id="kidRow"${kidCat?'':' hidden'}>
+          <label class="f">Kid<select id="fKid">${cfg().kids.map(kd=>`<option>${esc(kd.name)}</option>`).join('')}</select></label>
+          <label class="f" id="fSubWrap">For<select id="fSub"></select></label>
+          <p class="hint full">Also shows on the Kids page.</p>
+        </div>
+        <label class="f full">What did you buy?<input type="text" id="fDesc" placeholder="e.g. Rent, groceries…"></label>
+        <div class="foot">
+          <label class="check"><input type="checkbox" id="fRep"> Repeat every month</label>
+          <span id="untilWrap" hidden>until <select id="fUntil">${untilOptions(k)}</select></span>
+          <button class="btn primary" type="submit">Add</button>
+        </div>
+      </form>
+      <h3 style="margin-top:18px">Expenses in ${mLabel(k,true)}</h3>
+      <div class="list">${exps.length?exps.map(entryRow).join(''):`<div class="empty">Nothing yet for this month.</div>`}</div>
+    </div>
+    <div>${whereCard('Where the money went in '+mLabel(k,true),exps,'Add expenses and you will see here where your money goes.')}</div>
+  </div>`;
+}
+/* simple, sorted bars: biggest spending first */
+function whereCard(title,exps,emptyMsg){
+  const by={};exps.forEach(e=>{by[e.cat]=(by[e.cat]||0)+e.amount});
+  const rows=Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const total=rows.reduce((s,[,v])=>s+v,0), max=rows.length?rows[0][1]:1;
+  if(!rows.length)return `<div class="card" style="margin-bottom:16px"><h3>${title}</h3><div class="empty">${emptyMsg}</div></div>`;
+  const top=rows[0];
+  return `<div class="card" style="margin-bottom:16px"><h3>${title}</h3>
+    <p class="wsum">Biggest: <b>${esc(top[0])}</b> — ${Math.round(top[1]/total*100)}% of everything spent.</p>
+    <div class="where">${rows.map(([c,v])=>`<div class="wrow"><div class="wn" title="${esc(c)}">${esc(c)}</div>
+      <div class="wt"><i style="width:${v/max*100}%"></i></div>
+      <div class="wv"><b>${money(v)}</b> <span>${Math.round(v/total*100)}%</span></div></div>`).join('')}</div></div>`;
+}
+function entryRow(e){
+  const[y,m,d]=e.date.split('-');
+  return `<div class="entry" data-act="editExp" data-id="${e.id}" role="button" tabindex="0">
+    <div class="d"><b>${+d}</b>${MON[+m-1]}</div>
+    <div class="t"><div class="w">${esc(e.desc||e.cat)}</div>
+      <div class="c">${esc(e.cat)}${e.series?' <span class="tag" title="Repeats monthly">↻ monthly</span>':''}${e.eduId?' <span class="tag">Kids</span>':''}</div></div>
+    <div class="a">${money(e.amount)}</div></div>`;
+}
+
+/* ----- Year ----- */
+function viewYear(){
+  const ks=yearKeys(UI.year), cats=cfg().categories;
+  const all=live(D.expenses).filter(e=>schoolYearOf(e.date.slice(0,7))===UI.year);
+  const by={}; all.forEach(e=>{const k=e.date.slice(0,7);by[e.cat]=by[e.cat]||{};by[e.cat][k]=(by[e.cat][k]||0)+e.amount});
+  const extra=Object.keys(by).filter(c=>!cats.includes(c));
+  const rowsCats=[...cats,...extra];
+  const cell=v=>v?money(v,{bare:true}):'<span class="zero">0</span>';
+  const catRows=rowsCats.map(c=>{const tot=ks.reduce((s,k)=>s+((by[c]||{})[k]||0),0);
+    return `<tr><td>${esc(c)}</td>${ks.map(k=>`<td class="n">${cell((by[c]||{})[k]||0)}</td>`).join('')}<td class="n"><b>${cell(tot)}</b></td></tr>`}).join('');
+  const sal=ks.map(k=>salaryOf(k).v), oth=ks.map(otherOf), inc=ks.map((k,i)=>sal[i]+oth[i]), exp=ks.map(spentIn), sav=ks.map((k,i)=>inc[i]-exp[i]);
+  const sum=a=>a.reduce((s,x)=>s+x,0);
+  const line=(lab,a,cls='')=>`<tr class="${cls}"><td>${lab}</td>${a.map(v=>`<td class="n">${cell(v)}</td>`).join('')}<td class="n"><b>${cell(sum(a))}</b></td></tr>`;
+  const savedLine=`<tr class="total"><td>Saved</td>${sav.map(v=>`<td class="n" style="${v<0?'color:var(--warn)':''}">${money(v,{bare:true})}</td>`).join('')}<td class="n">${money(sum(sav),{bare:true})}</td></tr>`;
+  let big='—',bigV=0; rowsCats.forEach(c=>{const t=sum(ks.map(k=>(by[c]||{})[k]||0));if(t>bigV){bigV=t;big=c}});
+  const tk=todayStr().slice(0,7), monthsDone=Math.max(1,ks.filter(k=>k<=tk).length||12);
+  const max=Math.max(1,...inc,...exp);
+  const head=`<tr><th>${''}</th>${ks.map(k=>`<th class="n">${mLabel(k)}</th>`).join('')}<th class="n">Year</th></tr>`;
+  return `
+  <div class="row" style="margin-bottom:14px"><div><h2>September ${UI.year} – August ${UI.year+1}</h2><p class="hint">Fills in by itself from your months. Nothing to type here.</p></div></div>
+  <div class="grid cols-2" style="margin-bottom:16px">
+    <div class="card"><h3>The year in short</h3>
+      <dl class="kv">
+        <dt>Total income</dt><dd>${money(sum(inc))}</dd>
+        <dt>Total expenses</dt><dd>${money(sum(exp))}</dd>
+        <dt>Total saved</dt><dd style="color:${sum(sav)<0?'var(--warn)':'var(--good)'}">${money(sum(sav))}</dd>
+        <dt>Saved per month (avg so far)</dt><dd>${money(sum(sav.slice(0,monthsDone))/monthsDone)}</dd>
+        <dt>Biggest expense item</dt><dd>${esc(big)}${bigV?' · '+money(bigV):''}</dd>
+      </dl></div>
+    <div class="card"><h3>Income vs. spent</h3>
+      <div class="chart">${ks.map((k,i)=>`<div class="col" title="${mLabel(k,true)}: income ${money(inc[i])}, spent ${money(exp[i])}">
+        <div class="bars"><i class="inc" style="height:${inc[i]/max*100}%"></i><i class="exp${exp[i]>inc[i]?' over':''}" style="height:${exp[i]/max*100}%"></i></div>
+        <div class="lab">${mLabel(k)[0]}</div></div>`).join('')}</div>
+      <div class="legend"><span><i class="inc" style="background:color-mix(in srgb,var(--accent) 35%,transparent)"></i>Income</span><span><i style="background:var(--accent)"></i>Spent</span><span><i style="background:var(--warn)"></i>Spent more than income</span></div>
+    </div>
+  </div>
+  ${whereCard('Where the money went this year',all,'No expenses yet this year.')}
+  <div class="card" style="margin-bottom:16px"><h3>Expenses by item</h3>
+    <div class="scroll"><table class="tbl"><thead>${head}</thead><tbody>${catRows}
+      ${line('Total expenses',exp,'total')}</tbody></table></div></div>
+  <div class="card"><h3>Totals</h3>
+    <div class="scroll"><table class="tbl"><thead>${head}</thead><tbody>
+      ${line('Salary',sal)}${line('Other income',oth)}${line('Total income',inc,'sub')}${line('Total expenses',exp)}${savedLine}
+    </tbody></table></div></div>`;
+}
+
+/* ----- Kids ----- */
+function viewKids(){
+  const ks=yearKeys(UI.year), kids=cfg().kids;
+  const pays=live(D.edu).filter(e=>schoolYearOf(e.date.slice(0,7))===UI.year);
+  const cell=v=>v?money(v,{bare:true}):'<span class="zero">0</span>';
+  const sumKS=(kid,sub,k)=>pays.filter(p=>p.kid===kid&&(sub==null||p.subject===sub)&&(k==null||p.date.slice(0,7)===k)).reduce((s,p)=>s+p.amount,0);
+  let body='';
+  kids.forEach(kd=>{
+    const subs=[...kd.subjects]; pays.filter(p=>p.kid===kd.name&&!subs.includes(p.subject)).forEach(p=>{if(!subs.includes(p.subject))subs.push(p.subject)});
+    subs.forEach(s=>{body+=`<tr><td><span class="muted">${esc(kd.name)} ·</span> ${esc(s)}</td>${ks.map(k=>`<td class="n">${cell(sumKS(kd.name,s,k))}</td>`).join('')}<td class="n"><b>${cell(sumKS(kd.name,s,null))}</b></td></tr>`});
+    body+=`<tr class="sub"><td>${esc(kd.name)} total</td>${ks.map(k=>`<td class="n">${cell(sumKS(kd.name,null,k))}</td>`).join('')}<td class="n">${cell(sumKS(kd.name,null,null))}</td></tr>`;
+  });
+  const allK=k=>pays.filter(p=>p.date.slice(0,7)===k).reduce((s,p)=>s+p.amount,0);
+  body+=`<tr class="total"><td>All kids total</td>${ks.map(k=>`<td class="n">${cell(allK(k))}</td>`).join('')}<td class="n">${cell(pays.reduce((s,p)=>s+p.amount,0))}</td></tr>`;
+  const k=UI.month, list=pays.filter(p=>p.date.slice(0,7)===k&&(UI.kidFilter==='all'||p.kid===UI.kidFilter)).sort((a,b)=>a.date<b.date?-1:1);
+  const tiles=kids.map(kd=>`<div class="stat"><div class="l">${esc(kd.name)}</div><div class="v num">${money(sumKS(kd.name,null,null))}</div><div class="sub">${mLabel(k)}: ${money(sumKS(kd.name,null,k))}</div></div>`).join('');
+  return `
+  ${monthStrip(allK)}
+  <div class="row" style="margin-bottom:12px"><h2>Kids' education</h2></div>
+  <div class="stats" style="grid-template-columns:repeat(${Math.min(4,kids.length+1)},minmax(0,1fr))">${tiles}
+    <div class="stat"><div class="l">All kids · year</div><div class="v num">${money(pays.reduce((s,p)=>s+p.amount,0))}</div><div class="sub">${mLabel(k)}: ${money(allK(k))}</div></div></div>
+  <div class="grid cols-2" style="margin-bottom:16px">
+    <div class="card"><h3>Log a payment</h3>
+      <form id="eduForm" class="form2" autocomplete="off">
+        <label class="f">Date<input type="date" id="fDate" value="${defaultDate(k)}" required></label>
+        <label class="f">Amount<input type="number" id="fAmt" inputmode="decimal" step="any" min="0" required placeholder="0"></label>
+        <label class="f">Kid<select id="fKid">${kids.map(kd=>`<option>${esc(kd.name)}</option>`).join('')}</select></label>
+        <label class="f">For<select id="fSub"></select></label>
+        <label class="f full">Note (optional)<input type="text" id="fNote" placeholder="e.g. teacher's name"></label>
+        <div class="foot">
+          <label class="check"><input type="checkbox" id="fRep"> Repeat every month</label>
+          <span id="untilWrap" hidden>until <select id="fUntil">${untilOptions(k)}</select></span>
+          <button class="btn primary" type="submit">Add</button>
+        </div>
+        <p class="hint full">Also shows in your monthly expenses (School fees → School fees, Private lessons &amp; Books → Private lessons).</p>
+      </form></div>
+    <div class="card"><div class="row" style="margin-bottom:10px"><h3 style="margin:0">Payments in ${mLabel(k,true)}</h3><span class="spacer"></span>
+      <select id="kidFilter" data-act="kidFilter" style="width:auto;min-height:34px;padding:4px 8px"><option value="all">All kids</option>${kids.map(kd=>`<option${UI.kidFilter===kd.name?' selected':''}>${esc(kd.name)}</option>`).join('')}</select></div>
+      <div class="list">${list.length?list.map(p=>{const[y,m,d]=p.date.split('-');return `<div class="entry" data-act="editEdu" data-id="${p.id}" role="button" tabindex="0">
+        <div class="d"><b>${+d}</b>${MON[+m-1]}</div><div class="t"><div class="w">${esc(p.kid)} · ${esc(p.subject)}</div>
+        <div class="c">${esc(p.note||'')}${p.series?' <span class="tag">↻ monthly</span>':''}${live(D.expenses).some(e=>e.eduId===p.id)?' <span class="tag">in monthly</span>':''}</div></div>
+        <div class="a">${money(p.amount)}</div></div>`}).join(''):`<div class="empty">No payments this month.</div>`}</div></div>
+  </div>
+  <div class="card"><h3>Summary: each kid by month</h3><div class="scroll"><table class="tbl">
+    <thead><tr><th>Kid · for</th>${ks.map(k=>`<th class="n">${mLabel(k)}</th>`).join('')}<th class="n">Year</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+/* Month page: School fees → only the kid; Private lessons → kid + (Private lessons or Books) */
+function refreshMonthKid(){
+  const r=$('#kidRow'), c=$('#fCat'); if(!r||!c)return;
+  r.hidden=!KID_CATS.includes(c.value);
+  const fees=c.value==='School fees';
+  fillSubjects($('#fKid').value,'#fSub','Private lessons',x=>!/fee/i.test(x));
+  $('#fSubWrap').hidden=fees||!$('#fSub').options.length;
+}
+/* School fees → "School fees" category; Private lessons, Books and anything else → "Private lessons" */
+function guessCat(subject){const cats=cfg().categories;const want=/fee|uniform/i.test(subject)?'School fees':'Private lessons';return cats.includes(want)?want:cats[0]}
+function fillSubjects(kid,sel,cur,filter){
+  const kd=cfg().kids.find(x=>x.name===kid), el=$(sel); if(!el)return;
+  el.innerHTML=(kd?kd.subjects:[]).filter(filter||(()=>true)).map(s=>`<option${s===cur?' selected':''}>${esc(s)}</option>`).join('');
+  const lc=$('#fLinkCat'); if(lc&&sel==='#fSub') lc.value=guessCat(el.value);
+}
+
+/* ----- Settings ----- */
+function viewSettings(){
+  const c=cfg();
+  return `<div class="set grid cols-2">
+  <div>
+    <section class="card"><h2>Backup file</h2>
+      <p class="hint">Everything is saved in Safari on this Mac. Save a backup file now and then (for example to iCloud Drive or Documents) so nothing is lost if Safari's website data is cleared. Opening a backup <b>merges</b> it with what is here — nothing is lost.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" data-act="export">Save backup file</button>
+        <button class="btn" data-act="import">Open backup file…</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn small" data-act="csvExp">Expenses as CSV (Excel)</button>
+        <button class="btn small" data-act="csvEdu">Kids payments as CSV (Excel)</button>
+      </div>
+    </section>
+    <section class="card"><h2>Money</h2>
+      <div class="row" style="margin-top:8px">
+        <label class="f" style="flex:1">Currency label<input type="text" id="sCur" data-act="currency" value="${esc(c.currency)}" placeholder="KD"></label>
+        <label class="f" style="flex:1">Decimals<select id="sDec" data-act="decimals">${[0,1,2,3].map(n=>`<option${n===c.decimals?' selected':''}>${n}</option>`).join('')}</select></label>
+      </div>
+    </section>
+  </div>
+  <div>
+    <section class="card"><h2>Expense categories</h2>
+      <p class="hint">Renaming a category also renames it in every expense.</p>
+      <div class="editlist">${c.categories.map((x,i)=>`<div class="row"><input type="text" id="cat-${i}" data-act="renameCat" data-old="${esc(x)}" value="${esc(x)}">
+        <button class="btn small" data-act="moveCat" data-i="${i}" data-d="-1" aria-label="Move up" ${i?'':'disabled'}>↑</button>
+        <button class="btn small danger" data-act="delCat" data-i="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>
+      <form id="catForm" class="row"><input type="text" id="newCat" placeholder="New category" style="flex:1"><button class="btn" type="submit">Add</button></form>
+    </section>
+    <section class="card"><h2>Kids</h2>
+      <p class="hint">What you pay for each kid, one per line (Private lessons, School fees, Books…). Renaming a kid updates all their payments.</p>
+      <div style="margin-top:10px">${c.kids.map((kd,i)=>`<div class="kidbox"><div class="row"><input type="text" id="kid-${i}" data-act="renameKid" data-old="${esc(kd.name)}" value="${esc(kd.name)}" style="flex:1;font-weight:600">
+        <button class="btn small danger" data-act="delKid" data-i="${i}">Remove</button></div>
+        <textarea id="subs-${i}" data-act="subjects" data-i="${i}" aria-label="Subjects for ${esc(kd.name)}">${esc(kd.subjects.join('\n'))}</textarea></div>`).join('')}</div>
+      <form id="kidForm" class="row"><input type="text" id="newKid" placeholder="Add a kid" style="flex:1"><button class="btn" type="submit">Add</button></form>
+    </section>
+    <section class="card"><h2>Start over</h2><p class="hint">Deletes everything in this app. Save a backup file first if you may need it.</p>
+      <div class="row" style="margin-top:10px"><button class="btn danger" data-act="reset">Erase data on this device</button></div></section>
+  </div></div>`;
+}
+
+/* ============ actions ============ */
+function addRecords(kind,base,fromDate,until){
+  const day=+fromDate.slice(8,10), start=fromDate.slice(0,7), out=[];
+  const series=until?uid():null;
+  let k=start;
+  do{ out.push(Object.assign({},base,{id:uid(),u:now(),date:k===start?fromDate:dateIn(k,day),series})); if(!until)break; k=nextKey(k);}while(k<=until);
+  D[kind].push(...out); return out;
+}
+function addKidPayment(kid,subject,amount,note,date,until,cat){
+  const recs=addRecords('edu',{kid,subject,amount,note},date,until);
+  recs.forEach(r=>D.expenses.push({id:uid(),u:now(),date:r.date,desc:`${kid} – ${subject}${note?' ('+note+')':''}`,cat,amount,eduId:r.id,series:r.series}));
+  return recs;
+}
+function onSubmitExp(ev){
+  ev.preventDefault();
+  const date=$('#fDate').value, amt=num($('#fAmt').value);
+  if(!date||amt==null){toast('Add a date and an amount');return}
+  const rep=$('#fRep').checked&&$('#fUntil').value;
+  const cat=$('#fCat').value, desc=$('#fDesc').value.trim(), kr=$('#kidRow');
+  const recs=(kr&&!kr.hidden&&$('#fKid').value)
+    ?addKidPayment($('#fKid').value,cat==='School fees'?'School fees':($('#fSub').value||'Private lessons'),amt,desc,date,rep||null,cat)
+    :addRecords('expenses',{desc,cat,amount:amt},date,rep||null);
+  UI.month=date.slice(0,7); UI.year=schoolYearOf(UI.month); saveUI();
+  commit(recs.length>1?`Added to ${recs.length} months (${mLabel(recs[0].date.slice(0,7))} → ${mLabel(recs.at(-1).date.slice(0,7))})`:'Added');
+  setTimeout(()=>{const f=$('#fAmt');if(f)f.focus()},20);
+}
+function onSubmitEdu(ev){
+  ev.preventDefault();
+  const date=$('#fDate').value, amt=num($('#fAmt').value);
+  if(!date||amt==null){toast('Add a date and an amount');return}
+  const rep=$('#fRep').checked&&$('#fUntil').value;
+  const kid=$('#fKid').value, subject=$('#fSub').value, note=$('#fNote').value.trim();
+  const recs=addKidPayment(kid,subject,amt,note,date,rep||null,guessCat(subject));
+  UI.month=date.slice(0,7); UI.year=schoolYearOf(UI.month); saveUI();
+  commit(recs.length>1?`Added to ${recs.length} months`:'Added');
+}
+
+/* edit dialog */
+function openEdit(kind,id){
+  const arr=D[kind], r=arr.find(x=>x.id===id); if(!r)return;
+  if(kind==='expenses'&&r.eduId&&D.edu.some(x=>x.id===r.eduId&&!x.del))return openEdit('edu',r.eduId)
+  const seriesCount=r.series?live(arr).filter(x=>x.series===r.series&&x.date>=r.date).length:1;
+  const isEdu=kind==='edu';
+  const dlg=$('#dlg');
+  dlg.innerHTML=`<form method="dialog" id="editForm">
+    <h2>${isEdu?'Edit payment':'Edit expense'}</h2>
+    <div class="g2"><label class="f">Date<input type="date" id="eDate" value="${r.date}"></label>
+      <label class="f">Amount<input type="number" id="eAmt" inputmode="decimal" step="any" value="${r.amount}"></label></div>
+    ${isEdu?`<div class="g2"><label class="f">Kid<select id="eKid">${cfg().kids.map(k=>`<option${k.name===r.kid?' selected':''}>${esc(k.name)}</option>`).join('')}</select></label>
+      <label class="f">For<select id="eSub"></select></label></div>
+      <label class="f">Note<input type="text" id="eNote" value="${esc(r.note||'')}"></label>`
+     :`<label class="f">What did you buy?<input type="text" id="eDesc" value="${esc(r.desc||'')}"></label>
+      <label class="f">Category<select id="eCat">${catOptions(r.cat)}${cfg().categories.includes(r.cat)?'':`<option selected>${esc(r.cat)}</option>`}</select></label>`}
+    ${seriesCount>1?`<div class="scope"><b>This repeats monthly.</b>
+      <label class="check"><input type="radio" name="scope" value="one" checked> Only ${mLabel(r.date.slice(0,7),true)}</label>
+      <label class="check"><input type="radio" name="scope" value="next"> This and the ${seriesCount-1} following month${seriesCount>2?'s':''}</label></div>`:''}
+    <div class="row" style="margin-top:6px"><button class="btn danger" value="del" type="button" id="eDel">Delete</button><span class="spacer"></span>
+      <button class="btn" value="cancel" type="button" id="eCancel">Cancel</button><button class="btn primary" type="submit">Save</button></div>
+  </form>`;
+  if(isEdu){fillSubjects(r.kid,'#eSub',r.subject);$('#eKid').onchange=e=>fillSubjects(e.target.value,'#eSub');
+    if(![...$('#eSub').options].some(o=>o.value===r.subject)){$('#eSub').insertAdjacentHTML('beforeend',`<option selected>${esc(r.subject)}</option>`)}}
+  const targets=()=>{const sc=dlg.querySelector('input[name=scope]:checked');return(sc&&sc.value==='next')?live(arr).filter(x=>x.series===r.series&&x.date>=r.date):[r]};
+  const syncLinked=(eduRec)=>{D.expenses.filter(e=>e.eduId===eduRec.id&&!e.del).forEach(e=>{
+    if(eduRec.del){e.del=true}else{e.date=eduRec.date;e.amount=eduRec.amount;e.desc=`${eduRec.kid} – ${eduRec.subject}${eduRec.note?' ('+eduRec.note+')':''}`}e.u=now();})};
+  $('#eCancel').onclick=()=>dlg.close();
+  $('#eDel').onclick=()=>{const t=targets();if(!confirm(t.length>1?`Delete ${t.length} entries?`:'Delete this entry?'))return;
+    t.forEach(x=>{x.del=true;x.u=now();if(isEdu)syncLinked(x)});dlg.close();commit('Deleted')};
+  $('#editForm').onsubmit=ev=>{ev.preventDefault();
+    const nd=$('#eDate').value, amt=num($('#eAmt').value); if(!nd||amt==null){toast('Add a date and an amount');return}
+    const t=targets(), dayChanged=nd.slice(8)!==r.date.slice(8), newDay=+nd.slice(8);
+    t.forEach(x=>{
+      if(x===r)x.date=nd; else if(dayChanged)x.date=dateIn(x.date.slice(0,7),newDay);
+      x.amount=amt;
+      if(isEdu){x.kid=$('#eKid').value;x.subject=$('#eSub').value;x.note=$('#eNote').value.trim();syncLinked(x)}
+      else{x.desc=$('#eDesc').value.trim();x.cat=$('#eCat').value}
+      if(t.length===1&&x.series&&seriesCount>1){} x.u=now();});
+    if(t.length===1&&r.date.slice(0,7)!==nd.slice(0,7)){UI.month=nd.slice(0,7);UI.year=schoolYearOf(UI.month);saveUI()}
+    dlg.close();commit(t.length>1?`Updated ${t.length} months`:'Saved')};
+  dlg.showModal();
+}
+
+/* settings actions */
+function touchCfg(){cfg().u=now()}
+function renameCat(old,nw){
+  nw=nw.trim(); const c=cfg(); if(!nw||nw===old)return render();
+  if(c.categories.includes(nw)){toast('That category already exists');return render()}
+  c.categories[c.categories.indexOf(old)]=nw; touchCfg();
+  D.expenses.forEach(e=>{if(e.cat===old){e.cat=nw;e.u=now()}});
+  Object.values(D.months).forEach(m=>{if(m['b:'+old]){m['b:'+nw]={v:m['b:'+old].v,u:now()};m['b:'+old]={v:null,u:now()}}});
+  commit('Renamed');
+}
+function renameKid(old,nw){
+  nw=nw.trim(); const c=cfg(); if(!nw||nw===old)return render();
+  if(c.kids.some(k=>k.name===nw)){toast('That name already exists');return render()}
+  c.kids.find(k=>k.name===old).name=nw; touchCfg();
+  D.edu.forEach(e=>{if(e.kid===old){e.kid=nw;e.u=now()}});
+  D.expenses.forEach(e=>{if(e.eduId&&e.desc.startsWith(old+' – ')){e.desc=nw+e.desc.slice(old.length);e.u=now()}});
+  commit('Renamed');
+}
+
+function download(name,text,type){
+  const blob=new Blob([text],{type});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+const csvCell=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+
+/* ============ events ============ */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act],[data-tab]'); if(!t)return;
+  if(t.dataset.tab){UI.tab=t.dataset.tab;saveUI();render();window.scrollTo(0,0);return}
+  const a=t.dataset.act;
+  if(a==='pickMonth'){UI.month=t.dataset.k;saveUI();render();return}
+  if(a==='editExp')return openEdit('expenses',t.dataset.id);
+  if(a==='editEdu')return openEdit('edu',t.dataset.id);
+  if(a==='moveCat'){const c=cfg().categories,i=+t.dataset.i;[c[i-1],c[i]]=[c[i],c[i-1]];touchCfg();commit();return}
+  if(a==='delCat'){const c=cfg().categories,name=c[+t.dataset.i];const n=live(D.expenses).filter(x=>x.cat===name).length;
+    if(n){alert(`"${name}" is used by ${n} expense${n>1?'s':''}. Rename it instead, or move those expenses to another category first.`);return}
+    if(!confirm(`Remove "${name}"?`))return; c.splice(+t.dataset.i,1);touchCfg();commit('Removed');return}
+  if(a==='delKid'){const k=cfg().kids[+t.dataset.i];const n=live(D.edu).filter(x=>x.kid===k.name).length;
+    if(n){alert(`${k.name} has ${n} payment${n>1?'s':''}. Delete those first, or just rename.`);return}
+    if(!confirm(`Remove ${k.name}?`))return; cfg().kids.splice(+t.dataset.i,1);touchCfg();commit('Removed');return}
+  if(a==='export'){download(`my-year-backup-${todayStr()}.json`,JSON.stringify(D),'application/json');return}
+  if(a==='import'){$('#fileIn').click();return}
+  if(a==='csvExp'){const rows=[['Date','What','Category','Amount','Repeats']].concat(live(D.expenses).map(e=>[e.date,e.desc,e.cat,e.amount,e.series?'monthly':'']));
+    download(`expenses-${todayStr()}.csv`,'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n'),'text/csv');return}
+  if(a==='csvEdu'){const rows=[['Date','Kid','Subject','Amount','Note']].concat(live(D.edu).map(e=>[e.date,e.kid,e.subject,e.amount,e.note]));
+    download(`kids-education-${todayStr()}.csv`,'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n'),'text/csv');return}
+  if(a==='reset'){if(!confirm('Erase all data on this device?'))return;D=defaultData();ls.set(LS_DATA,D);render();toast('Erased');return}
+});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('entry')){e.preventDefault();e.target.click()}});
+document.addEventListener('change',e=>{
+  const t=e.target, a=t.dataset.act, k=UI.month;
+  if(t.id==='fRep'){$('#untilWrap').hidden=!t.checked;return}
+  if(t.id==='fDate'&&$('#fUntil')){$('#fUntil').innerHTML=untilOptions(t.value.slice(0,7));return}
+  if(t.id==='fKid'){if($('#kidRow'))refreshMonthKid();else fillSubjects(t.value,'#fSub');return}
+  if(t.id==='fCat'){UI.lastCat=t.value;saveUI();refreshMonthKid();return}
+  if(t.id==='fSub'){const lc=$('#fLinkCat');if(lc)lc.value=guessCat(t.value);return}
+  if(!a)return;
+  if(a==='salary'){setMField(k,'salary',num(t.value));commit();return}
+  if(a==='other'){setMField(k,'other',num(t.value));commit();return}
+  if(a==='carry'){setMField(k,'carry',num(t.value));commit();return}
+  if(a==='budget'){setMField(k,'b:'+t.dataset.cat,num(t.value));commit();return}
+  if(a==='kidFilter'){UI.kidFilter=t.value;saveUI();render();return}
+  if(a==='currency'){cfg().currency=t.value.trim();touchCfg();commit();return}
+  if(a==='decimals'){cfg().decimals=+t.value;touchCfg();commit();return}
+  if(a==='renameCat')return renameCat(t.dataset.old,t.value);
+  if(a==='renameKid')return renameKid(t.dataset.old,t.value);
+  if(a==='subjects'){const kd=cfg().kids[+t.dataset.i];kd.subjects=t.value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);touchCfg();commit('Saved');return}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='expForm')return onSubmitExp(e);
+  if(e.target.id==='eduForm')return onSubmitEdu(e);
+  if(e.target.id==='catForm'){e.preventDefault();const v=$('#newCat').value.trim();if(!v)return;if(cfg().categories.includes(v))return toast('Already there');cfg().categories.push(v);touchCfg();commit('Added');return}
+  if(e.target.id==='kidForm'){e.preventDefault();const v=$('#newKid').value.trim();if(!v)return;if(cfg().kids.some(k=>k.name===v))return toast('Already there');cfg().kids.push({name:v,subjects:['School fees','Private lessons','Books']});touchCfg();commit('Added');return}
+});
+$('#fileIn').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  try{const x=JSON.parse(await f.text()); if(!x.config||!x.expenses)throw new Error('not a My Year backup');
+    D=mergeData(D,x); commit('Backup merged ✓');}catch(err){alert('Could not open this file: '+err.message)}
+});
+$('#yPrev').onclick=()=>{UI.year--;UI.month=yearKeys(UI.year)[0];saveUI();render()};
+$('#yNext').onclick=()=>{UI.year++;UI.month=yearKeys(UI.year)[0];saveUI();render()};
+
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)}
+
+/* ============ start ============ */
+render();
+</script>
+</body>
+</html>
